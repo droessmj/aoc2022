@@ -1,8 +1,8 @@
 # 2022 Advent of Code
 
-### Exercises attempted in Go to better learn the language
+Exercises attempted in Go to better learn the language
 
-#### TODO 
+### TODO 
 
 - [x] Module / package imports
-- [ ] Debugging setup
+- [x] Debugging setup
