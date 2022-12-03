@@ -4,5 +4,5 @@
 
 #### TODO 
 
-- Module / package imports
-- Debugging setup
+- [x] Module / package imports
+- [ ] Debugging setup
