@@ -4,13 +4,19 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"github.com/emirpasic/gods/sets/hashset"
+	"strconv"
+	"strings"
 )
 
-func parseInput() []string {
-	var input []string
-	
-	file, err := os.Open("input.test")
+type ElfWorkload struct {
+	start int
+	end   int
+}
+
+func parseInput() [][]string {
+	var input [][]string
+
+	file, err := os.Open("input.txt")
 	if err != nil {
 		fmt.Println(err)
 
@@ -19,9 +25,10 @@ func parseInput() []string {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if ! (len(scanner.Text()) == 0) {
-			input = append(input, scanner.Text())
-		} 
+		if !(len(scanner.Text()) == 0) {
+			roundStrings := strings.Split(scanner.Text(), ",")
+			input = append(input, roundStrings)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -31,64 +38,59 @@ func parseInput() []string {
 	return input
 }
 
-func solvePart1(inputs []string) int {
-	var score int = 0 
-	var row int = 0 
+func compareWorkloadOverlap(e1 ElfWorkload, e2 ElfWorkload) bool {
 
-	//lowercase a == 97 (1) == -96 offset
-	//upercase A == 65 (27) == -38 offset
-	const lowerOffset int = -96
-	const upperOffset int = -38
-
-	for _, e := range inputs {
-		//var print bool = true
-
-		midpoint := len(e) / 2
-		runeArr := []rune(e)
-
-		first := runeArr[0:midpoint]
-		second := runeArr[midpoint:]
-
-		set := hashset.New()
-
-		for _, r := range first {
-			set.Add(r)
-		}
-		
-		// this would be so much easier if there were built-in sets...
-		seen := hashset.New()
-		for _, r := range second {
-
-			// if we've already seen this rune, continue
-			// if _, ok := seen[r]; ok  {
-			// 	continue
-			// } else {
-			// 	seen[r] = exists
-			// }
-			if seen.Contains(r) {
-				continue
-			} else {
-				seen.Add(r)
-			}
-
-			if set.Contains(r)  {
-				//var t int
-				if r < 95 {
-					//t = (int(r) + upperOffset)
-					score += (int(r) + upperOffset)
-				} else {
-					//t = (int(r) + lowerOffset)
-					score += (int(r) + lowerOffset)
-				}
-				//fmt.Println("row:", row, " ", string(r), ":", t)
-				//print = false
-			}
-		}
-		
-		row++
+	if e1.start >= e2.start && e1.end <= e2.end {
+		return true
+	} else if e2.start >= e1.start && e2.end <= e1.end {
+		return true
 	}
 
-	return score
+	return false
+}
+
+func solvePart1(inputs [][]string) int {
+	var count int
+	for _, e := range inputs {
+
+		e1Parts := strings.Split(e[0], "-")
+		start, _ := strconv.Atoi(e1Parts[0])
+		end, _ := strconv.Atoi(e1Parts[1])
+		elf1 := ElfWorkload{start: start, end: end}
+
+		e2Parts := strings.Split(e[1], "-")
+		start, _ = strconv.Atoi(e2Parts[0])
+		end, _ = strconv.Atoi(e2Parts[1])
+		elf2 := ElfWorkload{start: start, end: end}
+
+		if result := compareWorkloadOverlap(elf1, elf2); result == true {
+			count++
+		}
+	}
+
+	return count
+}
+
+func solvePart2(inputs [][]string) int {
+	var count int
+	for _, e := range inputs {
+
+		e1Parts := strings.Split(e[0], "-")
+		start, _ := strconv.Atoi(e1Parts[0])
+		end, _ := strconv.Atoi(e1Parts[1])
+		elf1 := ElfWorkload{start: start, end: end}
+
+		e2Parts := strings.Split(e[1], "-")
+		start, _ = strconv.Atoi(e2Parts[0])
+		end, _ = strconv.Atoi(e2Parts[1])
+		elf2 := ElfWorkload{start: start, end: end}
+
+		if result := compareWorkloadOverlapPart2(elf1, elf2); result == true {
+			count++
+		}
+	}
+
+	return count
 }
 
 func main() {
@@ -97,4 +99,7 @@ func main() {
 
 	resultPt1 := solvePart1(inputs)
 	fmt.Println(resultPt1)
+
+	resultPt2 := solvePart2(inputs)
+	fmt.Println(resultPt2)
 }
