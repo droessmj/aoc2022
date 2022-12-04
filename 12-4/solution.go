@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -47,6 +48,13 @@ func compareWorkloadOverlap(e1 ElfWorkload, e2 ElfWorkload) bool {
 	}
 
 	return false
+}
+
+func compareWorkloadOverlapPart2(e1 ElfWorkload, e2 ElfWorkload) bool {
+	a := math.Max(float64(e1.start), float64(e2.start))
+	b := math.Min(float64(e1.end), float64(e2.end))
+
+	return a <= b
 }
 
 func solvePart1(inputs [][]string) int {
