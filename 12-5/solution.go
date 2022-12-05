@@ -49,6 +49,51 @@ func processMove(line string, stacks []arraystack.Stack) {
 	}
 }
 
+func processMovePt2(line string, stacks []arraystack.Stack) {
+	// move 1 from 2 to 1
+	pieces := strings.Split(line, " ")
+	count, _ := strconv.Atoi(pieces[1])
+	startIdx, _ := strconv.Atoi(pieces[3])
+	endIdx, _ := strconv.Atoi(pieces[5])
+	startIdx-- //offset index
+	endIdx--
+
+	// move as unit
+	if count == 1 {
+		val, _ := stacks[startIdx].Pop()
+		stacks[endIdx].Push(val)
+	} else {
+		tempStack := arraystack.New()
+		for i := 0; i < count; i++ {
+			val, _ := stacks[startIdx].Pop()
+			tempStack.Push(val)
+		}
+		p, _ := tempStack.Peek()
+		for p != nil {
+			val, _ := tempStack.Pop()
+			stacks[endIdx].Push(val)
+			p, _ = tempStack.Peek()
+		}
+	}
+
+}
+
+func solvePart2(inputs []string, stacks []arraystack.Stack) string {
+	for _, l := range inputs {
+		processMovePt2(l, stacks)
+	}
+
+	//final String
+	var result string
+	for _, s := range stacks {
+		val, _ := s.Peek()
+		result += val.(string)
+	}
+
+	return result
+
+}
+
 func solvePart1(inputs []string, stacks []arraystack.Stack) string {
 
 	for _, l := range inputs {
@@ -176,10 +221,9 @@ func main() {
 		stacks[2] = *arraystack.New()
 		stacks[2].Push("P")
 	*/
+	//resultPt1 := solvePart1(inputs, stacks)
+	//fmt.Println(resultPt1)
 
-	resultPt1 := solvePart1(inputs, stacks)
-	fmt.Println(resultPt1)
-
-	// resultPt2 := solvePart2(inputs, stacks)
-	// fmt.Println(resultPt2)
+	resultPt2 := solvePart2(inputs, stacks)
+	fmt.Println(resultPt2)
 }
