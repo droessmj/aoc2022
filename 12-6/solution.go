@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-
-	"golang.org/x/exp/slices"
 )
 
 func parseInput() []string {
@@ -34,33 +32,42 @@ func parseInput() []string {
 
 func solve(inputs []string, uniqChars int) int {
 	var input string = inputs[0]
-	var t string
-	var seenRune []rune
+	var seenRune = make([]rune, uniqChars)
+	runeMap := make(map[rune]int)
+	var count int
 
-	for idx1, el := range input {
-		t += string(el)
-		if idx1 < uniqChars {
+	for idx, el := range input {
+
+		if idx < uniqChars {
+			seenRune[idx] = el
+			runeMap[el] += 1
 			continue
 		} else {
-			t = t[1:]
-		}
-
-		// could swap this to be a sliding window rather than a for - for
-		for idx2, e := range t {
-			if idx2 == 0 {
-				seenRune = seenRune[:0]
+			var dupes bool = false
+			for _, r := range seenRune {
+				count = runeMap[r]
+				if count > 1 {
+					dupes = true
+				}
 			}
-			//fmt.Println(seenRune)
+			if dupes == false {
+				return idx
+			} else {
+				runeMap[seenRune[0]]-- //remove from head
 
-			if result := slices.Contains(seenRune, e); result {
-				break
+				//shift to left
+				for each := range seenRune {
+					if each == 0 {
+						continue
+					}
+
+					seenRune[each-1] = seenRune[each]
+				}
+
+				//add new
+				seenRune[uniqChars-1] = el
+				runeMap[el]++
 			}
-			seenRune = append(seenRune, e)
-
-			if idx2 == (uniqChars - 1) {
-				return idx1
-			}
-
 		}
 	}
 
@@ -72,9 +79,9 @@ func main() {
 	inputs := parseInput()
 	//fmt.Println(inputs)
 
-	resultPt1 := solve(inputs, 4) + 1
+	resultPt1 := solve(inputs, 4)
 	fmt.Println(resultPt1)
 
-	resultPt2 := solve(inputs, 14) + 1
+	resultPt2 := solve(inputs, 14)
 	fmt.Println(resultPt2)
 }
