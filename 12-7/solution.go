@@ -46,7 +46,7 @@ func parseInput() []string {
 	return input
 }
 
-func solve(inputs []string) int {
+func solve(inputs []string) (int, int) {
 
 	rootDir := Directory{files: []File{}, directories: []*Directory{}, parent: nil, name: "root"}
 	var curDir *Directory = &rootDir
@@ -87,23 +87,57 @@ func solve(inputs []string) int {
 	//fmt.Println(rootDir)
 
 	//walk dirs to identify those in scope, add their sizes to score
-	score := identifyDirs(&rootDir)
+	score := identifyDirsPt1(&rootDir)
 
-	return score
+	var totalUsedSpace int = rootDir.size
+	_, resultDir, _ := identifyDirsPt2(&rootDir, totalUsedSpace)
+
+	return score, resultDir.size
 }
 
-func identifyDirs(dir *Directory) int {
+func identifyDirsPt2(dir *Directory, totalUsedSpace int) (bool, *Directory, int) {
+	const totalSpace int = 70000000
+	const requiredSpace int = 30000000
+
+	var bestCandidate *Directory
+	var result bool = false
+
+	availableSpace := totalSpace - totalUsedSpace
+	extraSpace := (availableSpace + dir.size) - requiredSpace
+
+	//fmt.Println("Candidate", dir.name, extraSpace)
+	if extraSpace >= 0 {
+
+		bestCandidate = dir
+
+		// eval children
+		for _, d := range dir.directories {
+			if result, childBestCandidateDirectory, childBestCandidateExtraSpace := identifyDirsPt2(d, totalUsedSpace); result {
+				if childBestCandidateExtraSpace < extraSpace {
+					bestCandidate = childBestCandidateDirectory
+					extraSpace = childBestCandidateExtraSpace
+				}
+			}
+		}
+		result = true
+	}
+
+	return result, bestCandidate, extraSpace
+}
+
+func identifyDirsPt1(dir *Directory) int {
 	var score int = 0
 	for _, d := range dir.directories {
 		if d.size <= 100000 {
 			score += d.size
-			score += identifyDirs(d)
+			score += identifyDirsPt1(d)
 		} else {
 			if len(d.directories) > 0 {
-				score += identifyDirs(d)
+				score += identifyDirsPt1(d)
 			}
 		}
 	}
+	//fmt.Println(dir.name)
 
 	return score
 }
@@ -129,9 +163,7 @@ func main() {
 	inputs := parseInput()
 	//fmt.Println(inputs)
 
-	resultPt1 := solve(inputs)
-	fmt.Println(resultPt1)
+	result1, result2 := solve(inputs)
+	fmt.Println(result1, result2)
 
-	// resultPt2 := solve(inputs, 14)
-	// fmt.Println(resultPt2)
 }
