@@ -71,14 +71,6 @@ func parseInput() []Move {
 }
 
 func moveT(h Location, hPrev Location, t *Location, visitedLocations *hashset.Set, dir Direction) {
-	//math on whether or not t should move
-
-	//case - head one above
-	//case - head one to the right
-	//case - head one to left
-	//case - head one below
-	//case - diagonal any of the 4 directions
-
 	if math.Abs(float64(h.x-t.x)) < 2 && math.Abs(float64(h.y-t.y)) < 2 {
 		//do nothing
 		return
@@ -88,20 +80,15 @@ func moveT(h Location, hPrev Location, t *Location, visitedLocations *hashset.Se
 		t.x = hPrev.x
 		visitedLocations.Add(Location{x: t.x, y: t.y})
 	} else {
-		//case -- not touching
 		switch dir {
 		case Up:
 			t.y++
-			//diagonal case
 		case Down:
 			t.y--
-			//diagonal case
 		case Right:
 			t.x++
-			//diagonal case
 		case Left:
 			t.x--
-			//diagonal
 		}
 
 		visitedLocations.Add(Location{x: t.x, y: t.y})
@@ -126,7 +113,6 @@ func moveH(move Move, h *Location, t *Location, visitedLocations *hashset.Set) {
 			h.x++
 			moveT(*h, hPrev, t, visitedLocations, Right)
 		}
-		//fmt.Println("   h", h, "t", t, "direction", move.direction)
 	}
 }
 
@@ -147,18 +133,84 @@ func solvePart1(input []Move) int {
 	return visitedLocations.Size()
 }
 
-func solvePart2(input []Move) int {
+func moveT2(knots []*Location, knotIdx int, visitedLocations *hashset.Set) {
+	//recursive move
+	h := knots[knotIdx]
+	t := knots[knotIdx+1] // ensure check to avoid overflow
 
-	return 0
+	if math.Abs(float64(h.x-t.x)) < 2 && math.Abs(float64(h.y-t.y)) < 2 {
+		//do nothing -- tail within on square of head
+		return
+	} else {
+		dx := math.Abs(float64(h.x - t.x))
+		dy := math.Abs(float64(h.y - t.y))
+
+		if dx > 0 {
+			if h.x > t.x {
+				t.x++
+			} else {
+				t.x--
+			}
+		}
+
+		if dy > 0 {
+			if h.y > t.y {
+				t.y++
+			} else {
+				t.y--
+			}
+		}
+	}
+
+	if knotIdx+1 == 9 {
+		visitedLocations.Add(Location{x: t.x, y: t.y})
+		return
+	} else {
+		moveT2(knots, knotIdx+1, visitedLocations)
+	}
+}
+
+func moveH2(move Move, knots []*Location, visitedLocations *hashset.Set) {
+	h := knots[0]
+	for i := 0; i < move.steps; i++ {
+		switch move.direction {
+		case Up:
+			h.y++
+		case Down:
+			h.y--
+		case Left:
+			h.x--
+		case Right:
+			h.x++
+		}
+		moveT2(knots, 0, visitedLocations)
+	}
+}
+
+func solvePart2(input []Move) int {
+	visitedLocations := hashset.New()
+	var knots []*Location
+
+	//initial state is 0,0 on grid, len(inputs) - 1, 0 in 2d array
+	for i := 0; i < 10; i++ {
+		knot := Location{x: 0, y: 0}
+		knots = append(knots, &knot)
+	}
+	visitedLocations.Add(Location{x: knots[9].x, y: knots[9].y})
+
+	for _, move := range input {
+		moveH2(move, knots, visitedLocations)
+	}
+
+	return visitedLocations.Size()
 }
 
 func main() {
 	input := parseInput()
-	//fmt.Println(input)
 
 	resultPt1 := solvePart1(input)
 	fmt.Println(resultPt1)
 
-	// resultPt2 := solvePart2(input)
-	// fmt.Println(resultPt2)
+	resultPt2 := solvePart2(input)
+	fmt.Println(resultPt2)
 }
