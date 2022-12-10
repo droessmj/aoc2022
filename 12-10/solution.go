@@ -25,7 +25,7 @@ const (
 func parseInput() []Move {
 	var input []Move
 
-	file, err := os.Open("input.test")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		fmt.Println(err)
 
@@ -68,7 +68,6 @@ func solve(input []Move) int {
 
 	var modOffset int = 1
 	var cycleIndex int = 1
-	//var result bool = false
 	var finalScore int = 0
 
 	var screen [][]string
@@ -79,35 +78,27 @@ func solve(input []Move) int {
 		switch m.operation {
 
 		case noop:
-
-			//tick
 			tick(&row, &screen, &cycleIndex, &x, &modOffset, &rowX, &finalScore, 0, m.val)
 
 			continue
 
 		case addx:
-
-			//tick
 			tick(&row, &screen, &cycleIndex, &x, &modOffset, &rowX, &finalScore, 0, m.val)
-
-			//tick
 			tick(&row, &screen, &cycleIndex, &x, &modOffset, &rowX, &finalScore, 1, m.val)
 		}
-	}
-
-	//print stuff
-	for _, r := range screen {
-		fmt.Println(strings.Trim(fmt.Sprint(r), "[]"))
 	}
 
 	return finalScore
 }
 
 func tick(row *[]string, screen *[][]string, cycleIndex *int, x *int, modOffset *int, rowX *int, finalScore *int, iteration int, mVal int) {
-
-	(*row)[*rowX] = evalScreen(*cycleIndex, *x)
+	var t int = 0
+	if *cycleIndex > 5 {
+		t++
+	}
+	(*row)[*rowX] = evalScreen(*rowX, *x)
 	if (*cycleIndex)%40 == 0 {
-		*screen = append(*screen, *row)
+		fmt.Println(strings.Trim(fmt.Sprint(*row), "[]"))
 		*row = make([]string, 40)
 	}
 
@@ -141,7 +132,6 @@ func evalScreen(cycleIndex, x int) string {
 func main() {
 
 	input := parseInput()
-	//fmt.Println(input)
 
 	result := solve(input)
 	fmt.Println(result)
