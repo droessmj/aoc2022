@@ -72,7 +72,12 @@ func Toss(source *Monkey, target *Monkey, newWorryLevel int) {
 
 func CalcNewWorryLevel(m *Monkey, curWorryLevel int) int {
 	var result int = curWorryLevel
-	intVal, _ := strconv.Atoi(m.opPieces[5])
+	var intVal int
+	if m.opPieces[5] == "old" {
+		intVal = curWorryLevel
+	} else {
+		intVal, _ = strconv.Atoi(m.opPieces[5])
+	}
 
 	switch m.opPieces[4] {
 	case "*":
@@ -88,7 +93,7 @@ func parseInput() []*Monkey {
 	var inputs []*Monkey
 	var lines []string
 
-	file, err := os.Open("input.test")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		fmt.Println(err)
 
@@ -151,8 +156,16 @@ func solve(inputMonkeys []*Monkey) int {
 	var secondInspectionIdx = 0
 	for idx, m := range inputMonkeys {
 		if m.inspections > topInspectionCount {
+			tempCount := topInspectionCount
+			tempIdx := topInspectionIdx
+
 			topInspectionCount = m.inspections
 			topInspectionIdx = idx
+
+			if tempCount > secondInspectionCount { // should always be true?
+				secondInspectionCount = tempCount
+				secondInspectionIdx = tempIdx
+			}
 		} else if m.inspections > secondInspectionCount {
 			secondInspectionCount = m.inspections
 			secondInspectionIdx = idx
