@@ -9,7 +9,7 @@ import (
 )
 
 type Monkey struct {
-	items           []int
+	items           []int64
 	opString        string
 	opPieces        []string
 	opOperation     string
@@ -23,7 +23,7 @@ type Monkey struct {
 func NewMonkeyFromLines(lines []string) Monkey {
 	//var m Monkey
 
-	var items []int
+	var items []int64
 	var opString string
 	var opOperation string
 	var opPieces []string
@@ -36,7 +36,7 @@ func NewMonkeyFromLines(lines []string) Monkey {
 	pieces := strings.Split(strings.Split(strings.Trim(lines[1], " "), ":")[1], ",")
 	for _, e := range pieces {
 		intVal, _ := strconv.Atoi(strings.Trim(e, " "))
-		items = append(items, intVal)
+		items = append(items, int64(intVal))
 	}
 
 	//parse operation
@@ -65,18 +65,24 @@ func NewMonkeyFromLines(lines []string) Monkey {
 	}
 }
 
-func Toss(source *Monkey, target *Monkey, newWorryLevel int) {
+func Toss(source *Monkey, target *Monkey, newWorryLevel int64) {
 	_, source.items = source.items[0], source.items[1:] // pop item off source
 	target.items = append(target.items, newWorryLevel)
 }
 
-func CalcNewWorryLevel(m *Monkey, curWorryLevel int) int {
-	var result int = curWorryLevel
-	var intVal int
+func CalcNewWorryLevel(m *Monkey, curWorryLevel int64, modulo int64) int64 {
+	/*
+		- First, you need to multiply all the monkeys' mod values together.
+		- After every operation, mod that value with M.
+	*/
+
+	var result int64 = curWorryLevel
+	var intVal int64
 	if m.opPieces[5] == "old" {
 		intVal = curWorryLevel
 	} else {
-		intVal, _ = strconv.Atoi(m.opPieces[5])
+		i, _ := strconv.Atoi(m.opPieces[5])
+		intVal = int64(i)
 	}
 
 	switch m.opPieces[4] {
@@ -86,7 +92,9 @@ func CalcNewWorryLevel(m *Monkey, curWorryLevel int) int {
 		result += intVal
 	}
 
-	return result
+	remainder := result % modulo
+
+	return remainder
 }
 
 func parseInput() []*Monkey {
@@ -122,22 +130,30 @@ func parseInput() []*Monkey {
 	return inputs
 }
 
-func solve(inputMonkeys []*Monkey) int {
+func solve(inputMonkeys []*Monkey, rounds int, reduceWorryLevel bool) int {
 
-	for i := 0; i < 20; i++ {
+	var modulo int64 = 1
+	for _, m := range inputMonkeys {
+		modulo *= int64(m.testVal)
+	}
+
+	for i := 0; i < rounds; i++ {
 		for _, m := range inputMonkeys {
 			//inspect item
 			for _, item := range m.items {
 				m.inspections++
 
 				//worry level multiplied
-				newWorryLevel := CalcNewWorryLevel(m, item)
+				newWorryLevel := CalcNewWorryLevel(m, item, modulo)
 
 				//woryy level divided by 3
-				newWorryLevel = newWorryLevel / 3
+				if reduceWorryLevel {
+					newWorryLevel = newWorryLevel / 3
+				}
 
 				//perform test
-				if (newWorryLevel % m.testVal) == 0 {
+				if newWorryLevel%int64(m.testVal) == 0 {
+					//newWorryLevel = newWorryLevel / int64(m.testVal)
 					// toss to new monkey with new value
 					Toss(m, inputMonkeys[m.testTrueTarget], newWorryLevel)
 				} else {
@@ -184,10 +200,10 @@ func main() {
 	input := parseInput()
 	//fmt.Println(input)
 
-	resultPt1 := solve(input)
+	resultPt1 := solve(input, 20, true)
 	fmt.Println(resultPt1)
 
-	// resultPt2 := solvePart2(input)
-	// fmt.Println(resultPt2)
-
+	input = parseInput()
+	resultPt2 := solve(input, 10000, false)
+	fmt.Println(resultPt2)
 }
