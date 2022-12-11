@@ -10,7 +10,11 @@ import (
 func parseInput() []int {
 	var input []int
 
-	file, err := os.Open("input.txt")
+	var name string = "input.test"
+	if len(os.Args) > 1 {
+		name = "input.txt"
+	}
+	file, err := os.Open(name)
 	if err != nil {
 		fmt.Println(err)
 

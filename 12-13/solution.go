@@ -10,7 +10,11 @@ import (
 func parseInput() []int {
 	var input []int
 
-	file, err := os.Open("input.txt")
+	var name string = "input.test"
+	if len(os.Args) > 1 {
+		name = "input.txt"
+	}
+	file, err := os.Open(name)
 	if err != nil {
 		fmt.Println(err)
 
@@ -47,7 +51,9 @@ func solvePart2(input []int) int {
 
 func main() {
 
+	//fmt.Println(os.Args[1])
 	input := parseInput()
+	fmt.Println(input)
 
 	resultPt1 := solvePart1(input)
 	fmt.Println(resultPt1)
