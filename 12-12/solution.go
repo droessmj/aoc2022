@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/yourbasic/graph"
@@ -93,7 +94,7 @@ func getGraphIndexFromRowCol(input [][]byte, row int, col int) int {
 	return col + (row * colWidth)
 }
 
-func solvePart1(input [][]byte) int {
+func solve(input [][]byte) (int, int) {
 	g := graph.New(len(input) * len(input[0]))
 
 	// scan for start value
@@ -117,17 +118,39 @@ func solvePart1(input [][]byte) int {
 
 	startIdx := getGraphIndexFromPoint(input, startPoint)
 	targetIdx := getGraphIndexFromPoint(input, targetPoint)
+	_, dist := graph.ShortestPath(g, startIdx, targetIdx)
 
-	path, dist := graph.ShortestPath(g, startIdx, targetIdx)
-	fmt.Println("Path", path, "Distance", dist)
+	//-----------------
 
-	return int(dist)
+	shortestAPath := math.MaxInt
+	a := byte('a')
+	aPoints := make([]Point, 0)
+
+	for rIdx, row := range input {
+		for cIdx, el := range row {
+			if el == a {
+				aPoints = append(aPoints, Point{row: rIdx, col: cIdx})
+			}
+		}
+	}
+
+	// get count of all 'a' bytes
+	// get index of all bytes
+	// iterate for all various start points, get lowest path
+	for _, p := range aPoints {
+		_, aDist := graph.ShortestPath(g, getGraphIndexFromPoint(input, p), targetIdx)
+		if aDist > 0 && int(aDist) < shortestAPath {
+			shortestAPath = int(aDist)
+		}
+	}
+
+	return int(dist), shortestAPath
 }
 
 func main() {
 
 	input := parseInput()
-	resultPt1 := solvePart1(input)
+	result1, result2 := solve(input)
 
-	fmt.Println(resultPt1)
+	fmt.Println(result1, result2)
 }
