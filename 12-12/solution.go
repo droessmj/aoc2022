@@ -3,22 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"math"
 	"os"
 
-	"github.com/emirpasic/gods/sets/hashset"
-	"github.com/emirpasic/gods/stacks/arraystack"
+	"github.com/yourbasic/graph"
 )
 
 type Point struct {
 	row int
 	col int
-}
-
-type Node struct {
-	p     Point
-	steps int
-	state hashset.Set
 }
 
 func parseInput() [][]byte {
@@ -92,88 +84,50 @@ func getPointForValue(input [][]byte, target byte) Point {
 	panic("Failure to find target byte!")
 }
 
-func copyState(s hashset.Set) hashset.Set {
-	newSet := hashset.New()
+func getGraphIndexFromPoint(input [][]byte, p Point) int {
+	return getGraphIndexFromRowCol(input, p.row, p.col)
+}
 
-	for _, v := range s.Values() {
-		newSet.Add(v)
-	}
-
-	return *newSet
+func getGraphIndexFromRowCol(input [][]byte, row int, col int) int {
+	colWidth := len(input[0])
+	return col + (row * colWidth)
 }
 
 func solvePart1(input [][]byte) int {
-	var minSteps int = math.MaxInt
-	var checks int = 0
-
-	stack := arraystack.New()
-	/*
-	   procedure DFS_iterative(G, v) is
-	       let S be a stack
-	       S.push(v)
-	       while S is not empty do
-	           v = S.pop()
-	           if v is not labeled as discovered then
-	               label v as discovered
-	               for all edges from v to w in G.adjacentEdges(v) do
-	                   S.push(w)
-	*/
+	g := graph.New(len(input) * len(input[0]))
 
 	// scan for start value
 	startPoint := getPointForValue(input, []byte("S")[0])
-	stack.Push(Node{p: startPoint, steps: 0, state: *hashset.New()})
-
 	targetPoint := getPointForValue(input, []byte("E")[0])
+
 	input[startPoint.row][startPoint.col] = byte('a') // set for comparisons
 	input[targetPoint.row][targetPoint.col] = byte('z')
 
-	//loop
-	for { // need to review and better handle the backtracking situation
-		checks++
-		if checks%1_000_000 == 0 {
-			fmt.Println(checks)
-		}
-
-		temp, _ := stack.Pop()
-		v := temp.(Node)
-
-		visitedSet := copyState(v.state)
-
-		if !visitedSet.Contains(v.p) {
-
-			visitedSet.Add(v.p)
-
-			if v.p.row == targetPoint.row && v.p.col == targetPoint.col {
-				minSteps = v.steps
-				continue
-			}
-
-			availableSteps := getAdjacentSteps(input, v.p.row, v.p.col)
-			for _, e := range availableSteps {
-				if math.Abs(float64(input[e.row][e.col]-input[v.p.row][v.p.col])) <= 1 &&
-					v.steps+1 < minSteps {
-					stack.Push(Node{p: e, steps: v.steps + 1, state: visitedSet})
+	for rowIdx, row := range input {
+		for colIdx, bVal := range row {
+			adjacencies := getAdjacentSteps(input, rowIdx, colIdx)
+			for _, adjacency := range adjacencies {
+				if bVal >= input[adjacency.row][adjacency.col] ||
+					input[adjacency.row][adjacency.col]-bVal == 1 {
+					g.AddCost(getGraphIndexFromRowCol(input, rowIdx, colIdx), getGraphIndexFromPoint(input, adjacency), 1)
 				}
 			}
 		}
-
-		if _, ok := stack.Peek(); !ok {
-			break
-		}
 	}
 
-	fmt.Println("Stack checks", checks)
-	return minSteps
+	startIdx := getGraphIndexFromPoint(input, startPoint)
+	targetIdx := getGraphIndexFromPoint(input, targetPoint)
+
+	path, dist := graph.ShortestPath(g, startIdx, targetIdx)
+	fmt.Println("Path", path, "Distance", dist)
+
+	return int(dist)
 }
 
 func main() {
 
 	input := parseInput()
-
 	resultPt1 := solvePart1(input)
+
 	fmt.Println(resultPt1)
-
-	// resultPt2 := solvePart2(input)
-	// fmt.Println(resultPt2)
-
 }
