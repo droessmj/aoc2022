@@ -18,6 +18,7 @@ type Point struct {
 type Node struct {
 	p     Point
 	steps int
+	state hashset.Set
 }
 
 func parseInput() [][]byte {
@@ -52,18 +53,7 @@ func parseInput() [][]byte {
 func getAdjacentSteps(input [][]byte, rowIdx int, colIdx int) []Point {
 	var adjacent []Point
 
-	if rowIdx == 0 {
-		// no up
-		adjacent = append(adjacent, Point{row: rowIdx + 1, col: colIdx})
-	} else if rowIdx == len(input)-1 {
-		// no down
-		adjacent = append(adjacent, Point{row: rowIdx - 1, col: colIdx})
-	} else {
-		// both
-		adjacent = append(adjacent, Point{row: rowIdx + 1, col: colIdx})
-		adjacent = append(adjacent, Point{row: rowIdx - 1, col: colIdx})
-	}
-
+	// bias left/right!
 	if colIdx == 0 {
 		// no left
 		adjacent = append(adjacent, Point{row: rowIdx, col: colIdx + 1})
@@ -74,6 +64,18 @@ func getAdjacentSteps(input [][]byte, rowIdx int, colIdx int) []Point {
 		// both
 		adjacent = append(adjacent, Point{row: rowIdx, col: colIdx + 1})
 		adjacent = append(adjacent, Point{row: rowIdx, col: colIdx - 1})
+	}
+
+	if rowIdx == 0 {
+		// no up
+		adjacent = append(adjacent, Point{row: rowIdx + 1, col: colIdx})
+	} else if rowIdx == len(input)-1 {
+		// no down
+		adjacent = append(adjacent, Point{row: rowIdx - 1, col: colIdx})
+	} else {
+		// both
+		adjacent = append(adjacent, Point{row: rowIdx + 1, col: colIdx})
+		adjacent = append(adjacent, Point{row: rowIdx - 1, col: colIdx})
 	}
 
 	return adjacent
@@ -90,12 +92,21 @@ func getPointForValue(input [][]byte, target byte) Point {
 	panic("Failure to find target byte!")
 }
 
+func copyState(s hashset.Set) hashset.Set {
+	newSet := hashset.New()
+
+	for _, v := range s.Values() {
+		newSet.Add(v)
+	}
+
+	return *newSet
+}
+
 func solvePart1(input [][]byte) int {
 	var minSteps int = math.MaxInt
+	var checks int = 0
 
 	stack := arraystack.New()
-	visitedSet := hashset.New()
-
 	/*
 	   procedure DFS_iterative(G, v) is
 	       let S be a stack
@@ -110,16 +121,23 @@ func solvePart1(input [][]byte) int {
 
 	// scan for start value
 	startPoint := getPointForValue(input, []byte("S")[0])
-	stack.Push(Node{p: startPoint, steps: 0})
+	stack.Push(Node{p: startPoint, steps: 0, state: *hashset.New()})
 
 	targetPoint := getPointForValue(input, []byte("E")[0])
 	input[startPoint.row][startPoint.col] = byte('a') // set for comparisons
 	input[targetPoint.row][targetPoint.col] = byte('z')
 
 	//loop
-	for {
+	for { // need to review and better handle the backtracking situation
+		checks++
+		if checks%1_000_000 == 0 {
+			fmt.Println(checks)
+		}
+
 		temp, _ := stack.Pop()
 		v := temp.(Node)
+
+		visitedSet := copyState(v.state)
 
 		if !visitedSet.Contains(v.p) {
 
@@ -134,7 +152,7 @@ func solvePart1(input [][]byte) int {
 			for _, e := range availableSteps {
 				if math.Abs(float64(input[e.row][e.col]-input[v.p.row][v.p.col])) <= 1 &&
 					v.steps+1 < minSteps {
-					stack.Push(Node{p: e, steps: v.steps + 1})
+					stack.Push(Node{p: e, steps: v.steps + 1, state: visitedSet})
 				}
 			}
 		}
@@ -144,6 +162,7 @@ func solvePart1(input [][]byte) int {
 		}
 	}
 
+	fmt.Println("Stack checks", checks)
 	return minSteps
 }
 
