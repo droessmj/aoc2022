@@ -57,11 +57,6 @@ func AddValsFromString(packet *[]interface{}, s string) {
 
 func ParsePacketFromListString(s string) []interface{} {
 
-	if s == "1,[2,[3,[4,[5,6,7]]]],8,9" {
-		// line 22 case -- ints, then lists -- need to handle this
-		fmt.Println("break2")
-	}
-
 	var packet []interface{}
 
 	if strings.Contains(s, "[") || strings.Contains(s, "]") {
@@ -72,7 +67,6 @@ func ParsePacketFromListString(s string) []interface{} {
 		if listLeftIdx != 0 {
 			// sub case -- multiple packets in one layer
 			packets := strings.Split(s, "],")
-			packets[0] = packets[0][listLeftIdx:]
 
 			prePiece := s[0 : listLeftIdx-1]
 			if prePiece != "" {
