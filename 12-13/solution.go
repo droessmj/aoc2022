@@ -132,28 +132,66 @@ func NewPacket(s string) Packet {
 	return Packet{values: packet}
 }
 
-func (left Packet) LessThanEqualTo(right Packet) bool {
+func LessThanEqualTo(left []interface{}, right []interface{}, index int) bool {
+	// do we need a depth?
 
-	return true
-	// for leftIdx, leftVal := range left.values {
+	if len(right) < index {
+		//false if right is smaller, and if we can't check it...
+		return false
+	}
 
-	// 	if len(right.values) < leftIdx {
-	// 		return false
-	// 	}
+	switch left[index].(type) {
+	case int:
+		rightInt := GetNextInt(right, index)
+		if rightInt == -1 {
+			return false
+		}
 
-	// 	rightVal := right.values[leftIdx]
+		if left[index].(int) < rightInt {
+			return true
+		} else if left[index].(int) == rightInt {
+			if index+1 < len(left) {
+				return LessThanEqualTo(left, right, index+1)
+			} else {
+				return true
+			}
 
-	// 	switch leftVal.(type) {
-	// 	case int:
-	// 		if rightVal.(int) < leftVal.(int) {
-	// 			return false
-	// 		}
+		} else {
+			return false
+		}
 
-	// 	case []int:
-	// 	}
-	// }
+	case []interface{}:
+		left := left[index].([]interface{})
+		right := right[index]
+		switch right.(type) {
+		case int:
+			return false
+		case []interface{}:
+			return LessThanEqualTo(left, right.([]interface{}), index)
+		default:
+			panic("unplanned type")
+		}
 
-	// return true
+	default:
+		panic("unhandled case")
+	}
+}
+
+func GetNextInt(val []interface{}, index int) int {
+
+	if len(val) <= index {
+		//false if right is smaller, and if we can't check it...
+		return -1
+	}
+
+	switch val[index].(type) {
+	case []interface{}:
+		return GetNextInt(val[index].([]interface{}), index)
+	case int:
+		return val[index].(int)
+	default:
+		return -1
+	}
 }
 
 func solvePart1(input []string) int {
@@ -163,13 +201,10 @@ func solvePart1(input []string) int {
 		left := NewPacket(input[i])
 		right := NewPacket(input[i+1])
 
-		fmt.Println(left)
-		fmt.Println(right)
-		fmt.Println("")
-		if left.LessThanEqualTo(right) {
-			correctCount += (i + 1)
-
-			//fmt.Println(left, right, i+1)
+		if LessThanEqualTo(left.values, right.values, 0) {
+			correctCount += (i / 2) + 1
+			fmt.Println(left, right, (i/2)+1)
+			fmt.Println()
 		}
 	}
 
@@ -182,7 +217,6 @@ func solvePart2(input []string) int {
 }
 
 func main() {
-
 	//fmt.Println(os.Args[1])
 	input := parseInput()
 	//fmt.Println(input)
@@ -192,5 +226,4 @@ func main() {
 
 	resultPt2 := solvePart2(input)
 	fmt.Println(resultPt2)
-
 }
