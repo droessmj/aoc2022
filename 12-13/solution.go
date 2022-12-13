@@ -12,7 +12,7 @@ import (
 func parseInput() []string {
 	var input []string
 
-	var name string = "input.txt"
+	var name string = "input.test"
 	if len(os.Args) > 1 {
 		name = "input.txt"
 	}
@@ -43,15 +43,39 @@ type Packet struct {
 }
 
 func AddValsFromString(packet *[]interface{}, s string) {
-	vals := strings.Split(strings.Trim(s, ","), ",")
-	for _, val := range vals {
-		// should all be ints?
-		i, err := strconv.Atoi(val)
-		if err != nil {
-			i = -1 //math.MinInt
+	s = strings.Trim(strings.Trim(strings.Trim(s, "["), "]"), ",")
+	if s != "" && s != "]" {
+		vals := strings.Split(s, ",")
+		for _, val := range vals {
+			// should all be ints?
+			i, err := strconv.Atoi(val)
+			if err != nil {
+				i = -1 //math.MinInt
+			}
+			*packet = append(*packet, i) // add to front!
 		}
-		*packet = append(*packet, i) // add to front!
 	}
+
+}
+
+func SplitSameLevel(s string) []string {
+	// 1],[2,3,4
+	// TODO - Round this out?
+	pieces := strings.Split(s, "],[")
+	for idx, p := range pieces {
+		openIndex := strings.Index(p, "[")
+		if openIndex > -1 {
+			p = p[openIndex+1:]
+		}
+
+		closeIndex := strings.LastIndex(p, "]")
+		if closeIndex > -1 {
+			p = p[:closeIndex]
+		}
+		pieces[idx] = p
+	}
+
+	return pieces
 
 }
 
@@ -59,67 +83,19 @@ func ParsePacketFromListString(s string) []interface{} {
 
 	var packet []interface{}
 
-	if strings.Contains(s, "[") || strings.Contains(s, "]") {
-		// case 2
-		listLeftIdx := strings.Index(s, "[") + 1
-		listRightIdx := strings.LastIndex(s, "]")
+	if strings.Contains(s, "[") {
+		openIndex := strings.Index(s, "[")
+		closeIndex := strings.LastIndex(s, "]")
 
-		if listLeftIdx != 0 {
-			// sub case -- multiple packets in one layer
-			packets := strings.Split(s, "],")
+		//need to do a split of items at the same level...then do the below on vals + packets
+		packets := SplitSameLevel(s[openIndex : closeIndex+1])
 
-			prePiece := s[0 : listLeftIdx-1]
-			if prePiece != "" {
-				AddValsFromString(&packet, prePiece)
-
-				closeBracketIdx := strings.LastIndex(s, "]")
-				if closeBracketIdx > len(s)-1 {
-					closeBracketIdx = len(s) - 1
-				}
-
-				if closeBracketIdx > -1 {
-					packet = append(packet, ParsePacketFromListString(s[listLeftIdx:closeBracketIdx]))
-				}
-
-				if closeBracketIdx > 0 && closeBracketIdx < len(s) {
-					ints2 := strings.Trim(s[closeBracketIdx:], "]")
-					if ints2 != "" {
-						AddValsFromString(&packet, ints2)
-					}
-				}
-
-			} else {
-				for _, p := range packets {
-					if strings.ContainsAny(p, "[]") {
-						// need to trim last one only, not ALL
-						openBracketIdx := strings.Index(p, "[")
-
-						if openBracketIdx == 0 {
-							p = p[1:] //trim
-						} else if openBracketIdx > 0 {
-							// prune front, then recurse
-							ints := p[0:openBracketIdx]
-							AddValsFromString(&packet, ints)
-							p = p[openBracketIdx:]
-						}
-
-						closeBracketIdx := strings.LastIndex(p, "]") - 1
-						if closeBracketIdx > -1 {
-							p = p[0:closeBracketIdx]
-						}
-
-						packet = append(packet, ParsePacketFromListString(p))
-					} else {
-						AddValsFromString(&packet, p)
-					}
-				}
-			}
-		} else {
-			packet = append(packet, ParsePacketFromListString(s[0:listRightIdx]))
-			if s[listRightIdx:] != "" {
-				AddValsFromString(&packet, s[listRightIdx:])
-			}
+		AddValsFromString(&packet, s[0:openIndex])
+		for _, p := range packets {
+			packet = append(packet, ParsePacketFromListString(p))
 		}
+		AddValsFromString(&packet, s[closeIndex:])
+
 	} else {
 		AddValsFromString(&packet, s)
 	}
@@ -128,10 +104,9 @@ func ParsePacketFromListString(s string) []interface{} {
 }
 
 func NewPacket(s string) Packet {
-
-	listLeftIdx := strings.Index(s, "[") + 1
-	listRightIdx := strings.LastIndex(s, "]")
-	packet := ParsePacketFromListString(s[listLeftIdx:listRightIdx])
+	openIndex := strings.Index(s, "[")
+	closeIndex := strings.LastIndex(s, "]")
+	packet := ParsePacketFromListString(s[openIndex+1 : closeIndex])
 
 	return Packet{values: packet}
 }
@@ -139,9 +114,11 @@ func NewPacket(s string) Packet {
 func LessThanEqualTo(left []interface{}, right []interface{}, index int) bool {
 	// do we need a depth?
 
-	if len(right) < index {
+	if len(right) <= index {
 		//false if right is smaller, and if we can't check it...
 		return false
+	} else if len(left) <= index && len(right) > index {
+		return true
 	}
 
 	switch left[index].(type) {
@@ -213,7 +190,7 @@ func solvePart1(input []string) int {
 			correctCount += (i / 2) + 1
 		}
 
-		if i > 5 {
+		if i > 10 {
 			break
 		}
 	}
@@ -227,9 +204,7 @@ func solvePart2(input []string) int {
 }
 
 func main() {
-	//fmt.Println(os.Args[1])
 	input := parseInput()
-	//fmt.Println(input)
 
 	resultPt1 := solvePart1(input)
 	fmt.Println(resultPt1)
