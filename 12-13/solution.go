@@ -12,7 +12,7 @@ import (
 func parseInput() []string {
 	var input []string
 
-	var name string = "input.test"
+	var name string = "input.txt"
 	if len(os.Args) > 1 {
 		name = "input.txt"
 	}
@@ -72,15 +72,17 @@ func ParsePacketFromListString(s string) []interface{} {
 			if prePiece != "" {
 				AddValsFromString(&packet, prePiece)
 
-				closeBracketIdx2 := strings.LastIndex(s, "]")
-				if closeBracketIdx2 > len(s)-1 {
-					closeBracketIdx2 = len(s) - 1
+				closeBracketIdx := strings.LastIndex(s, "]")
+				if closeBracketIdx > len(s)-1 {
+					closeBracketIdx = len(s) - 1
 				}
 
-				packet = append(packet, ParsePacketFromListString(s[listLeftIdx:closeBracketIdx2]))
+				if closeBracketIdx > -1 {
+					packet = append(packet, ParsePacketFromListString(s[listLeftIdx:closeBracketIdx]))
+				}
 
-				if closeBracketIdx2 > 0 && closeBracketIdx2 < len(s) {
-					ints2 := strings.Trim(s[closeBracketIdx2:], "]")
+				if closeBracketIdx > 0 && closeBracketIdx < len(s) {
+					ints2 := strings.Trim(s[closeBracketIdx:], "]")
 					if ints2 != "" {
 						AddValsFromString(&packet, ints2)
 					}
@@ -90,7 +92,6 @@ func ParsePacketFromListString(s string) []interface{} {
 				for _, p := range packets {
 					if strings.ContainsAny(p, "[]") {
 						// need to trim last one only, not ALL
-						closeBracketIdx := strings.LastIndex(p, "]") - 1
 						openBracketIdx := strings.Index(p, "[")
 
 						if openBracketIdx == 0 {
@@ -102,10 +103,11 @@ func ParsePacketFromListString(s string) []interface{} {
 							p = p[openBracketIdx:]
 						}
 
+						closeBracketIdx := strings.LastIndex(p, "]") - 1
 						if closeBracketIdx > -1 {
 							p = p[0:closeBracketIdx]
 						}
-						//listPiece := strings.Trim(strings.Trim(p, "]"), "[")
+
 						packet = append(packet, ParsePacketFromListString(p))
 					} else {
 						AddValsFromString(&packet, p)
@@ -113,10 +115,12 @@ func ParsePacketFromListString(s string) []interface{} {
 				}
 			}
 		} else {
-			packet = append(packet, ParsePacketFromListString(s[listLeftIdx:listRightIdx]))
+			packet = append(packet, ParsePacketFromListString(s[0:listRightIdx]))
+			if s[listRightIdx:] != "" {
+				AddValsFromString(&packet, s[listRightIdx:])
+			}
 		}
 	} else {
-		// case 1
 		AddValsFromString(&packet, s)
 	}
 
@@ -201,10 +205,16 @@ func solvePart1(input []string) int {
 		left := NewPacket(input[i])
 		right := NewPacket(input[i+1])
 
+		fmt.Println(left)
+		fmt.Println(right)
+		fmt.Println()
+
 		if LessThanEqualTo(left.values, right.values, 0) {
 			correctCount += (i / 2) + 1
-			fmt.Println(left, right, (i/2)+1)
-			fmt.Println()
+		}
+
+		if i > 5 {
+			break
 		}
 	}
 
