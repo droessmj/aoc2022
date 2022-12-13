@@ -6,8 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/emirpasic/gods/stacks/arraystack"
+	//"github.com/emirpasic/gods/stacks/arraystack"
 )
 
 func parseInput() []string {
@@ -43,55 +42,124 @@ type Packet struct {
 	values []interface{}
 }
 
-func NewPacket(s string) Packet {
-	var packetValues []interface{}
-	var curList []interface{}
-	headerStack := arraystack.New()
-
-	stringPieces := strings.Split(s, ",")
-	for _, piece := range stringPieces {
-		i, ok := strconv.Atoi(string(piece))
-
-		switch {
-
-		case ok == nil:
-			curList = append(curList, i)
-
-		case strings.Contains()'[':
-			curList = make([]interface{}, 0)
-
-		case r[0] == ']':
-			//Pop?
-			packetValues = append(packetValues, curList...)
-
-		default:
-			panic("default hit")
+func AddValsFromString(packet *[]interface{}, s string) {
+	vals := strings.Split(strings.Trim(s, ","), ",")
+	for _, val := range vals {
+		// should all be ints?
+		i, err := strconv.Atoi(val)
+		if err != nil {
+			i = -1 //math.MinInt
 		}
+		*packet = append(*packet, i) // add to front!
 	}
 
-	return Packet{values: packetValues}
+}
+
+func ParsePacketFromListString(s string) []interface{} {
+
+	if s == "1,[2,[3,[4,[5,6,7]]]],8,9" {
+		// line 22 case -- ints, then lists -- need to handle this
+		fmt.Println("break2")
+	}
+
+	var packet []interface{}
+
+	if strings.Contains(s, "[") || strings.Contains(s, "]") {
+		// case 2
+		listLeftIdx := strings.Index(s, "[") + 1
+		listRightIdx := strings.LastIndex(s, "]")
+
+		if listLeftIdx != 0 {
+			// sub case -- multiple packets in one layer
+			packets := strings.Split(s, "],")
+			packets[0] = packets[0][listLeftIdx:]
+
+			prePiece := s[0 : listLeftIdx-1]
+			if prePiece != "" {
+				AddValsFromString(&packet, prePiece)
+
+				closeBracketIdx2 := strings.LastIndex(s, "]")
+				if closeBracketIdx2 > len(s)-1 {
+					closeBracketIdx2 = len(s) - 1
+				}
+
+				packet = append(packet, ParsePacketFromListString(s[listLeftIdx:closeBracketIdx2]))
+
+				if closeBracketIdx2 > 0 && closeBracketIdx2 < len(s) {
+					ints2 := strings.Trim(s[closeBracketIdx2:], "]")
+					if ints2 != "" {
+						AddValsFromString(&packet, ints2)
+					}
+				}
+
+			} else {
+				for _, p := range packets {
+					if strings.ContainsAny(p, "[]") {
+						// need to trim last one only, not ALL
+						closeBracketIdx := strings.LastIndex(p, "]") - 1
+						openBracketIdx := strings.Index(p, "[")
+
+						if openBracketIdx == 0 {
+							p = p[1:] //trim
+						} else if openBracketIdx > 0 {
+							// prune front, then recurse
+							ints := p[0:openBracketIdx]
+							AddValsFromString(&packet, ints)
+							p = p[openBracketIdx:]
+						}
+
+						if closeBracketIdx > -1 {
+							p = p[0:closeBracketIdx]
+						}
+						//listPiece := strings.Trim(strings.Trim(p, "]"), "[")
+						packet = append(packet, ParsePacketFromListString(p))
+					} else {
+						AddValsFromString(&packet, p)
+					}
+				}
+			}
+		} else {
+			packet = append(packet, ParsePacketFromListString(s[listLeftIdx:listRightIdx]))
+		}
+	} else {
+		// case 1
+		AddValsFromString(&packet, s)
+	}
+
+	return packet
+}
+
+func NewPacket(s string) Packet {
+
+	listLeftIdx := strings.Index(s, "[") + 1
+	listRightIdx := strings.LastIndex(s, "]")
+	packet := ParsePacketFromListString(s[listLeftIdx:listRightIdx])
+
+	return Packet{values: packet}
 }
 
 func (left Packet) LessThanEqualTo(right Packet) bool {
-	for leftIdx, leftVal := range left.values {
-
-		if len(right.values) < leftIdx {
-			return false
-		}
-
-		rightVal := right.values[leftIdx]
-
-		switch leftVal.(type) {
-		case int:
-			if rightVal.(int) < leftVal.(int) {
-				return false
-			}
-
-		case []int:
-		}
-	}
 
 	return true
+	// for leftIdx, leftVal := range left.values {
+
+	// 	if len(right.values) < leftIdx {
+	// 		return false
+	// 	}
+
+	// 	rightVal := right.values[leftIdx]
+
+	// 	switch leftVal.(type) {
+	// 	case int:
+	// 		if rightVal.(int) < leftVal.(int) {
+	// 			return false
+	// 		}
+
+	// 	case []int:
+	// 	}
+	// }
+
+	// return true
 }
 
 func solvePart1(input []string) int {
@@ -101,10 +169,13 @@ func solvePart1(input []string) int {
 		left := NewPacket(input[i])
 		right := NewPacket(input[i+1])
 
+		fmt.Println(left)
+		fmt.Println(right)
+		fmt.Println("")
 		if left.LessThanEqualTo(right) {
 			correctCount += (i + 1)
 
-			fmt.Println(left, right, i+1)
+			//fmt.Println(left, right, i+1)
 		}
 	}
 
